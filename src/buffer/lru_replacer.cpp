@@ -14,33 +14,37 @@
 
 namespace bustub {
 
-LRUReplacer::LRUReplacer(size_t num_pages) {}
+LRUReplacer::LRUReplacer(size_t num_pages) : max_size_(num_pages) {}
 
 LRUReplacer::~LRUReplacer() = default;
 
 auto LRUReplacer::Victim(frame_id_t *frame_id) -> bool {
-  if (frame_list.empty()) return false;
-  *frame_id = frame_list.back();
-  frame_map.erase(*frame_id);
-  frame_list.pop_back();
+  std::scoped_lock scoped_lru_replacer_latch(lru_replacer_latch_);
+  if (frame_list_.empty()) return false;
+  *frame_id = frame_list_.back();
+  frame_map_.erase(*frame_id);
+  frame_list_.pop_back();
   return true;
 }
 
 void LRUReplacer::Pin(frame_id_t frame_id) {
-  if (frame_map.count(frame_id)) {
-    frame_list.erase(frame_map[frame_id]);
-    frame_map.erase(frame_id);
+  std::scoped_lock scoped_lru_replacer_latch(lru_replacer_latch_);
+  if (frame_map_.count(frame_id)) {
+    frame_list_.erase(frame_map_[frame_id]);
+    frame_map_.erase(frame_id);
   }
 }
 
 void LRUReplacer::Unpin(frame_id_t frame_id) {
-  if (frame_map.count(frame_id)) return;
-  frame_list.push_front(frame_id);
-  frame_map[frame_id] = frame_list.begin();
+  std::scoped_lock scoped_lru_replacer_latch(lru_replacer_latch_);
+  if (frame_map_.count(frame_id) || frame_list_.size() > max_size_) return;
+  frame_list_.push_front(frame_id);
+  frame_map_[frame_id] = frame_list_.begin();
 }
 
 auto LRUReplacer::Size() -> size_t {
-  return frame_list.size();
+  std::scoped_lock scoped_lru_replacer_latch(lru_replacer_latch_);
+  return frame_list_.size();
 }
 
 }  // namespace bustub
