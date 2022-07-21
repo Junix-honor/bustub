@@ -108,14 +108,14 @@ void DiskManager::ReadPage(page_id_t page_id, char *page_data) {
   int offset = page_id * PAGE_SIZE;
   // check if read beyond file length
   if (offset > GetFileSize(file_name_)) {
-    LOG_DEBUG("I/O error reading past end of file");
+    LOG_DEBUG("I/O error reading past end of file:%d",page_id);
     // std::cerr << "I/O error while reading" << std::endl;
   } else {
     // set read cursor to offset
     db_io_.seekp(offset);
     db_io_.read(page_data, PAGE_SIZE);
     if (db_io_.bad()) {
-      LOG_DEBUG("I/O error while reading");
+      LOG_DEBUG("I/O error while reading:%d", page_id);
       return;
     }
     // if file ends before reading PAGE_SIZE

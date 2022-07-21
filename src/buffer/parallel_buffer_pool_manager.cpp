@@ -39,8 +39,10 @@ ParallelBufferPoolManager::ParallelBufferPoolManager(size_t num_instances, size_
 
 // Update constructor to destruct all BufferPoolManagerInstances and deallocate any associated memory
 ParallelBufferPoolManager::~ParallelBufferPoolManager() {
-  for (auto &it : buffer_pools_) delete it;
-};
+  for (auto &it : buffer_pools_) {
+    delete it;
+  }
+}
 
 auto ParallelBufferPoolManager::GetPoolSize() -> size_t {
   // Get size of all BufferPoolManagerInstances
@@ -79,7 +81,9 @@ auto ParallelBufferPoolManager::NewPgImp(page_id_t *page_id) -> Page * {
   for (size_t i = 0; i < num_instances_; i++) {
     Page *new_page = buffer_pools_[starting_index_]->NewPage(page_id);
     starting_index_ = (starting_index_ + 1) % num_instances_;
-    if (new_page != nullptr) return new_page;
+    if (new_page != nullptr) {
+      return new_page;
+    }
   }
   return nullptr;
 }
@@ -91,7 +95,9 @@ auto ParallelBufferPoolManager::DeletePgImp(page_id_t page_id) -> bool {
 
 void ParallelBufferPoolManager::FlushAllPgsImp() {
   // flush all pages from all BufferPoolManagerInstances
-  for (auto &it : buffer_pools_) it->FlushAllPages();
+  for (auto &it : buffer_pools_) {
+    it->FlushAllPages();
+  }
 }
 
 }  // namespace bustub

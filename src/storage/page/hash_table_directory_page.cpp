@@ -43,14 +43,17 @@ void HashTableDirectoryPage::SetBucketPageId(uint32_t bucket_idx, page_id_t buck
 }
 
 auto HashTableDirectoryPage::GetSplitImageIndex(uint32_t bucket_idx) -> uint32_t {
-  return bucket_idx ^ (1 << local_depths_[bucket_idx]);
+  return bucket_idx ^ (1 << (local_depths_[bucket_idx] - 1));
 }
 
 auto HashTableDirectoryPage::Size() -> uint32_t { return 1 << global_depth_; }
 
 auto HashTableDirectoryPage::CanShrink() -> bool {
-  for (uint32_t curr_idx = 0; curr_idx < Size(); curr_idx++)
-    if (local_depths_[curr_idx] == global_depth_) return false;
+  for (uint32_t curr_idx = 0; curr_idx < Size(); curr_idx++) {
+    if (local_depths_[curr_idx] == global_depth_) {
+      return false;
+    }
+  }
   return true;
 }
 
