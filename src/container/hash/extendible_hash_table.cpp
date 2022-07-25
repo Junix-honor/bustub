@@ -152,6 +152,18 @@ auto HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
   page_id_t bucket_page_id = KeyToPageId(key, dir_page);
   page_id_t split_bucket_page_id = INVALID_PAGE_ID;
 
+  HASH_TABLE_BUCKET_TYPE *bucket_page = FetchBucketPage(bucket_page_id);
+  reinterpret_cast<Page *>(bucket_page)->WLatch();
+
+  if (!bucket_page->IsFull()) {
+    reinterpret_cast<Page *>(bucket_page)->WUnlatch();
+    assert(buffer_pool_manager_->UnpinPage(directory_page_id_, true, nullptr));
+    assert(buffer_pool_manager_->UnpinPage(bucket_page_id, true, nullptr));
+    table_latch_.WUnlock();
+    return Insert(transaction, key, value);
+  }
+
+  assert(bucket_page->IsFull());
   uint32_t local_depth = dir_page->GetLocalDepth(bucket_idx);
   uint32_t global_depth = dir_page->GetGlobalDepth();
 
@@ -163,10 +175,6 @@ auto HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
     }
     dir_page->IncrGlobalDepth();
   }
-
-  HASH_TABLE_BUCKET_TYPE *bucket_page = FetchBucketPage(bucket_page_id);
-  assert(bucket_page->IsFull());
-  reinterpret_cast<Page *>(bucket_page)->WLatch();
 
   HASH_TABLE_BUCKET_TYPE *split_bucket_page =
       reinterpret_cast<HASH_TABLE_BUCKET_TYPE *>(buffer_pool_manager_->NewPage(&split_bucket_page_id));
